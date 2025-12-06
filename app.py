@@ -11,7 +11,8 @@ from datetime import datetime
 app = Flask(__name__)
 # مفتاح سري ثابت للحفاظ على الجلسات
 app.config['SECRET_KEY'] = 'majram-secret-key-2024-purple-admin-panel'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+import os
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db').replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
