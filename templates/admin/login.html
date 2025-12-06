@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>تسجيل الدخول - لوحة التحكم</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a0a2e 0%, #16082d 50%, #0d051a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e0d0f0;
+        }
+        
+        .login-container {
+            background: linear-gradient(135deg, rgba(26, 10, 46, 0.9) 0%, rgba(10, 0, 20, 0.95) 100%);
+            border: 1px solid rgba(155, 77, 202, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(155, 77, 202, 0.2);
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .login-logo img {
+            width: 120px;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(155, 77, 202, 0.6));
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: #9b4dca;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            color: #c9a8e8;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #c9a8e8;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(26, 10, 46, 0.8);
+            border: 1px solid rgba(155, 77, 202, 0.3);
+            border-radius: 10px;
+            color: #e0d0f0;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #9b4dca;
+            box-shadow: 0 0 15px rgba(155, 77, 202, 0.3);
+        }
+        
+        .captcha-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            transform: scale(0.95);
+            transform-origin: center;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4a1a6b 0%, #9b4dca 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            box-shadow: 0 0 25px rgba(155, 77, 202, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .flash-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(107, 26, 26, 0.9) 0%, rgba(202, 77, 77, 0.9) 100%);
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #c9a8e8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: #9b4dca;
+        }
+        
+        @media (max-width: 480px) {
+            .captcha-container {
+                transform: scale(0.85);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+        </div>
+        <div class="login-header">
+            <h1>لوحة التحكم</h1>
+            <p>سجل دخولك للمتابعة</p>
+        </div>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" id="loginForm">
+            <div class="form-group">
+                <label>اسم المستخدم</label>
+                <input type="text" name="username" required placeholder="أدخل اسم المستخدم">
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" name="password" required placeholder="أدخل كلمة المرور">
+            </div>
+            
+            <div class="captcha-container">
+                <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+            </div>
+            
+            <button type="submit" class="btn">تسجيل الدخول</button>
+        </form>
+        
+        <a href="{{ url_for('index') }}" class="back-link">العودة للموقع</a>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            var response = grecaptcha.getResponse();
+            if(response.length == 0) {
+                e.preventDefault();
+                alert('الرجاء التحقق من أنك لست روبوت');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>
