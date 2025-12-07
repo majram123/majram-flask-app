@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 import os
 import json
 import requests
@@ -12,7 +14,10 @@ app = Flask(__name__)
 # مفتاح سري ثابت للحفاظ على الجلسات
 app.config['SECRET_KEY'] = 'majram-secret-key-2024-purple-admin-panel'
 import os
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///site.db').replace('postgres://', 'postgresql://', 1)
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -25,8 +30,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # ساعة واحدة
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
-# إنشاء مجلد الرفع إذا لم يكن موجوداً
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# إعدادات Cloudinary
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+)
 
 # مفاتيح reCAPTCHA (استخدم المفاتيح التجريبية من Google أو مفاتيحك الخاصة)
 RECAPTCHA_SITE_KEY = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'  # مفتاح تجريبي
@@ -248,18 +257,16 @@ def upload_image():
         return jsonify({'error': 'لم يتم اختيار صورة'}), 400
     
     if file and allowed_file(file.filename):
-        # إنشاء اسم ملف آمن مع طابع زمني
-        filename = secure_filename(file.filename)
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        name, ext = os.path.splitext(filename)
-        filename = f"{name}_{timestamp}{ext}"
+        # لا حاجة لحفظ الملف محلياً، سيتم رفعه مباشرة إلى Cloudinary
         
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        # إرجاع الرابط المحلي للصورة
-        image_url = url_for('static', filename=f'uploads/{filename}', _external=True)
-        return jsonify({'success': True, 'url': image_url})
+                # رفع الصورة إلى Cloudinary
+        try:
+            upload_result = cloudinary.uploader.upload(file, folder="majram-flask-app")
+            image_url = upload_result['secure_url']
+            return jsonify({'success': True, 'url': image_url})
+        except Exception as e:
+            print(f"Cloudinary Upload Error: {e}")
+            return jsonify({'error': 'فشل رفع الصورة إلى Cloudinary'}), 500
     
     return jsonify({'error': 'نوع الملف غير مسموح به. استخدم: png, jpg, jpeg, gif, webp'}), 400
 
@@ -287,7 +294,7 @@ def admin_edit_app(id):
     app_item.description = request.form.get('description', 'فارغ')
     app_item.image_url = request.form.get('image_url')
     app_item.download_link = request.form.get('download_link')
-    app_item.category_id = request.form.get('category_id')
+    app_item.category_id = int(request.form.get('category_id'))
     db.session.commit()
     flash('تم تعديل التطبيق بنجاح', 'success')
     return redirect(url_for('admin_apps'))
